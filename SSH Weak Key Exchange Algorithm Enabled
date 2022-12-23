@@ -1,0 +1,25 @@
+#!/usr/bin/env python
+
+from scapy.all import *
+
+# Read target IPs from a file or user input
+target_ips = input("Enter the target IPs (separated by spaces): ").split()
+
+# Iterate over the target IPs
+for target_ip in target_ips:
+    # Send a TCP SYN packet to the target IP on port 22 (SSH)
+    syn_packet = IP(dst=target_ip)/TCP(dport=22, flags="S")
+    syn_ack_packet = sr1(syn_packet)
+
+    # Check the SYN-ACK response to see if the key exchange algorithm is weak
+    if syn_ack_packet is not None:
+        # Extract the key exchange algorithm from the SYN-ACK response
+        key_exchange_algorithm = syn_ack_packet[TCP].options[1][1]
+
+        # Check if the key exchange algorithm is one of the weak algorithms
+        if key_exchange_algorithm in ['diffie-hellman-group1-sha1', 'diffie-hellman-group-exchange-sha1', 'gss-gex-sha1-', 'gss-group1-sha1-', 'gss-group14-sha1', 'rsa1024-sha1']:
+            print(f"{target_ip}: SSH Weak Key Exchange Algorithm Enabled ({key_exchange_algorithm})")
+        else:
+            print(f"{target_ip}: Strong key exchange algorithm ({key_exchange_algorithm})")
+    else:
+        print(f"{target_ip}: No response")
